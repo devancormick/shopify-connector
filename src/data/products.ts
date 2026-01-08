@@ -14,7 +14,7 @@ query Products($cursor: String, $first: Int!) {
         id
         title
         descriptionHtml
-        variants(first: 100) {
+        variants(first: 250) {
           edges {
             node {
               id
@@ -61,6 +61,12 @@ function inventoryStatus(qty: number): 'in_stock' | 'out_of_stock' | 'partial' {
   return 'in_stock';
 }
 
+function pickOptionByName(opts: Array<{ name: string; value: string }>, ...names: string[]): string | null {
+  const lower = names.map((n) => n.toLowerCase());
+  const opt = opts.find((o) => lower.includes(o.name.toLowerCase()));
+  return opt?.value ?? null;
+}
+
 function normalizeVariant(
   node: ProductsGql['products']['edges'][0]['node']['variants']['edges'][0]['node']
 ): NormalizedVariant {
@@ -68,11 +74,15 @@ function normalizeVariant(
   const option1 = opts[0]?.value ?? null;
   const option2 = opts[1]?.value ?? null;
   const option3 = opts[2]?.value ?? null;
+  const size = pickOptionByName(opts, 'size', 'Size');
+  const color = pickOptionByName(opts, 'color', 'Color', 'Colour');
   const qty = node.inventoryQuantity ?? 0;
   return {
     id: node.id,
     title: node.title,
     sku: node.sku ?? null,
+    size,
+    color,
     option1,
     option2,
     option3,
