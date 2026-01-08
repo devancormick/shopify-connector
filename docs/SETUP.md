@@ -2,19 +2,29 @@
 
 ## How connection works
 
+**Option A – OAuth (recommended for multi-tenant)**
+
 1. **Install URL**: Your backend or a simple UI sends the merchant to:
    `GET /auth/install?shop=STORE.myshopify.com`
    The connector redirects the merchant to Shopify OAuth.
 
 2. **Callback**: After the merchant approves, Shopify redirects to your callback with `?shop=...&code=...`. The connector exchanges the code for an access token and stores it by shop domain. No background sync is started.
 
-3. **Data access**: Your backend calls:
-   - `GET /api/orders?shop=STORE.myshopify.com` (optional `&cursor=...` for pagination)
-   - `GET /api/fulfillments?shop=STORE.myshopify.com&cursor=...`
-   - `GET /api/products?shop=STORE.myshopify.com&cursor=...`
-   Each returns JSON with a documented schema (see `src/types/schema.ts`). Use `hasNextPage` and `cursor` to page through large stores.
+**Option B – Private app token**
 
-4. **Refresh**: Call the same endpoints again anytime; no reconnection needed until the token is revoked or expired.
+- **Connect**: `POST /auth/connect-token` with body `{ "shop": "STORE.myshopify.com", "accessToken": "shpat_..." }`.
+- The connector validates the token with a Shopify API call, then stores it. Use for custom/private apps (read-only Admin API token).
+
+**Data access**
+
+- Your backend calls:
+  - `GET /api/orders?shop=STORE.myshopify.com` (optional `&cursor=...`) – orders include fulfillments/tracking per order
+  - `GET /api/fulfillments?shop=STORE.myshopify.com&cursor=...`
+  - `GET /api/products?shop=STORE.myshopify.com&cursor=...`
+  - `GET /api/product/{productId}/variants?shop=...&cursor=...` – paginated variants for products with many variants (>250)
+- Each returns JSON with a documented schema (see `docs/SCHEMA.md`). Use `hasNextPage` and `cursor` to page through large stores.
+
+**Refresh**: Call the same endpoints again anytime; no reconnection needed until the token is revoked or expired.
 
 ## Required scopes
 
@@ -39,4 +49,5 @@ Set in env as `SHOPIFY_SCOPES` (comma-separated) or leave default.
 
 ## Token expiration / reconnect
 
-If Shopify returns 401 (e.g. token expired or revoked), your backend should treat the store as disconnected and prompt the merchant to reconnect via `/auth/install?shop=...` again.
+- API responses use a consistent error shape: `{ "error": "message", "code": "TOKEN_INVALID" }` when the token is invalid (401).
+- If you get 401 with `code: "TOKEN_INVALID"`, treat the store as disconnected and prompt the merchant to reconnect: OAuth via `/auth/install?shop=...`, or private app via `POST /auth/connect-token` with a new token.

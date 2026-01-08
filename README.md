@@ -4,11 +4,12 @@ Read-only Shopify connector for an AI-based customer support platform. Securely 
 
 ## Features
 
-- **Secure connection**: OAuth-based store connect with token storage and revocation
-- **Read-only**: Orders, fulfillments, products; no writes, refunds, or order edits
-- **Structured data**: Normalized JSON payloads with documented schema
+- **Secure connection**: OAuth or private app token; store connect, token storage, revocation
+- **Read-only**: Orders (with fulfillments/tracking), fulfillments, products; no writes, refunds, or order edits
+- **Structured data**: Normalized JSON payloads; variants include size, color, SKU, inventory status
 - **Rate limiting**: Handles Shopify cost/rate limits and large stores with pagination
-- **Disconnect**: One-action revoke; no background sync after disconnect
+- **Large products**: `GET /api/product/{id}/variants` for products with >250 variants
+- **Disconnect**: One-action revoke; 401 + TOKEN_INVALID on expiry; no background sync after disconnect
 
 ## Quick Start
 

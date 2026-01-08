@@ -4,6 +4,8 @@ All dates are ISO 8601 strings. All list endpoints support pagination via `curso
 
 ## Orders – `GET /api/orders`
 
+Each order includes its fulfillments (tracking) so “Where is my order?” and “What is the tracking link?” can be answered from one call.
+
 ```json
 {
   "orders": [
@@ -21,6 +23,15 @@ All dates are ISO 8601 strings. All list endpoints support pagination via `curso
           "quantity": 2,
           "sku": "SKU-001",
           "variantId": "gid://shopify/ProductVariant/..."
+        }
+      ],
+      "fulfillments": [
+        {
+          "id": "gid://shopify/Fulfillment/...",
+          "status": "SUCCESS",
+          "trackingNumbers": ["1Z999AA10123456784"],
+          "trackingUrls": ["https://..."],
+          "carrierName": "UPS"
         }
       ]
     }
@@ -54,6 +65,8 @@ Orders with no tracking yet will have fulfillments with empty `trackingNumbers` 
 
 ## Products – `GET /api/products`
 
+Products include up to 250 variants per product. For products with more variants, use `GET /api/product/{productId}/variants`.
+
 ```json
 {
   "products": [
@@ -66,6 +79,8 @@ Orders with no tracking yet will have fulfillments with empty `trackingNumbers` 
           "id": "gid://shopify/ProductVariant/...",
           "title": "Small / Red",
           "sku": "SKU-S-R",
+          "size": "Small",
+          "color": "Red",
           "option1": "Small",
           "option2": "Red",
           "option3": null,
@@ -80,4 +95,23 @@ Orders with no tracking yet will have fulfillments with empty `trackingNumbers` 
 }
 ```
 
-`inventoryStatus`: `in_stock` | `out_of_stock` | `partial` (partial = 1–9 units).
+- `size` / `color`: Mapped from variant options when option name matches (e.g. Size, Color, Colour).
+- `inventoryStatus`: `in_stock` | `out_of_stock` | `partial` (partial = 1–9 units).
+
+## Product variants (large products) – `GET /api/product/{productId}/variants`
+
+For products with more than 250 variants, page through variants with this endpoint. Use the product GID (e.g. `gid://shopify/Product/123`).
+
+```json
+{
+  "productId": "gid://shopify/Product/123",
+  "productTitle": "Product A",
+  "variants": [ ... ],
+  "hasNextPage": true,
+  "cursor": "..."
+}
+```
+
+## Error responses
+
+All errors return `{ "error": "message", "code": "CODE" }` where `code` is optional. Use `code: "TOKEN_INVALID"` (with HTTP 401) to prompt the merchant to reconnect.
