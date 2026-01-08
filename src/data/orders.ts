@@ -2,6 +2,7 @@ import { graphqlRequest, type RateLimitState } from '../api';
 import type {
   NormalizedOrder,
   NormalizedLineItem,
+  NormalizedOrderFulfillment,
   OrdersPayload,
 } from '../types';
 
@@ -25,6 +26,19 @@ query Orders($cursor: String, $first: Int!) {
               quantity
               sku
               variant { id }
+            }
+          }
+        }
+        fulfillments(first: 20) {
+          edges {
+            node {
+              id
+              status
+              trackingInfo {
+                number
+                url
+                company
+              }
             }
           }
         }
@@ -56,6 +70,19 @@ interface OrdersGql {
             };
           }>;
         };
+        fulfillments: {
+          edges: Array<{
+            node: {
+              id: string;
+              status: string;
+              trackingInfo: Array<{
+                number: string | null;
+                url: string | null;
+                company: string | null;
+              }>;
+            };
+          }>;
+        };
       };
     }>;
   };
@@ -71,6 +98,19 @@ function normalizeLineItem(node: OrdersGql['orders']['edges'][0]['node']['lineIt
   };
 }
 
+function normalizeOrderFulfillment(
+  node: OrdersGql['orders']['edges'][0]['node']['fulfillments']['edges'][0]['node']
+): NormalizedOrderFulfillment {
+  const tracking = node.trackingInfo ?? [];
+  return {
+    id: node.id,
+    status: node.status,
+    trackingNumbers: tracking.map((t) => t?.number).filter((n): n is string => Boolean(n)),
+    trackingUrls: tracking.map((t) => t?.url).filter((u): u is string => Boolean(u)),
+    carrierName: tracking[0]?.company ?? null,
+  };
+}
+
 function normalizeOrder(node: OrdersGql['orders']['edges'][0]['node']): NormalizedOrder {
   return {
     id: node.id,
@@ -80,6 +120,7 @@ function normalizeOrder(node: OrdersGql['orders']['edges'][0]['node']): Normaliz
     createdAt: node.createdAt,
     customerName: node.customer?.displayName ?? null,
     lineItems: node.lineItems.edges.map((e) => normalizeLineItem(e.node)),
+    fulfillments: (node.fulfillments?.edges ?? []).map((e) => normalizeOrderFulfillment(e.node)),
   };
 }
 

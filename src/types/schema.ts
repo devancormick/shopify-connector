@@ -11,6 +11,14 @@ export interface NormalizedLineItem {
   variantId: string | null;
 }
 
+export interface NormalizedOrderFulfillment {
+  id: string;
+  status: string;
+  trackingNumbers: string[];
+  trackingUrls: string[];
+  carrierName: string | null;
+}
+
 export interface NormalizedOrder {
   id: string;
   name: string;
@@ -19,6 +27,7 @@ export interface NormalizedOrder {
   createdAt: string;
   customerName: string | null;
   lineItems: NormalizedLineItem[];
+  fulfillments: NormalizedOrderFulfillment[];
 }
 
 export interface NormalizedFulfillment {
@@ -35,6 +44,8 @@ export interface NormalizedVariant {
   id: string;
   title: string;
   sku: string | null;
+  size: string | null;
+  color: string | null;
   option1: string | null;
   option2: string | null;
   option3: string | null;
