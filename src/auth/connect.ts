@@ -27,7 +27,11 @@ export async function disconnectStore(
 ): Promise<DisconnectResult> {
   const token = await storage.get(shop);
   if (token) {
-    await revokeToken(shop, token);
+    try {
+      await revokeToken(shop, token);
+    } catch {
+      // OAuth revoke may fail for private app tokens; still remove from storage
+    }
     await storage.delete(shop);
   }
   return { shop: shop.toLowerCase(), disconnected: true };

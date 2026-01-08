@@ -7,3 +7,7 @@ export {
   type ConnectResult,
   type DisconnectResult,
 } from './connect';
+export {
+  connectWithToken,
+  type ConnectTokenResult,
+} from './connect-token';

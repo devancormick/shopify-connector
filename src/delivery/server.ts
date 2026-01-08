@@ -1,10 +1,12 @@
 import http from 'http';
 import { URL } from 'url';
 import { memoryTokenStorage } from '../auth';
-import { connectStore, disconnectStore, getConnectUrl } from '../auth';
+import { connectStore, disconnectStore, getConnectUrl, connectWithToken } from '../auth';
+import { TokenInvalidError } from '../api';
 import { fetchOrders } from '../data/orders';
 import { fetchFulfillments } from '../data/fulfillments';
 import { fetchProducts } from '../data/products';
+import { fetchProductVariants } from '../data/product-variants';
 
 const storage = memoryTokenStorage;
 
@@ -15,6 +17,17 @@ function send(res: http.ServerResponse, status: number, body: unknown): void {
     'Content-Length': Buffer.byteLength(data),
   });
   res.end(data);
+}
+
+function sendError(
+  res: http.ServerResponse,
+  status: number,
+  message: string,
+  code?: string
+): void {
+  const body: { error: string; code?: string } = { error: message };
+  if (code) body.code = code;
+  send(res, status, body);
 }
 
 function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
@@ -68,7 +81,7 @@ export function createServer(): http.Server {
         const body = await parseBody(req);
         const shop = (body.shop as string) ?? '';
         if (!shop) {
-          send(res, 400, { error: 'Missing shop in body' });
+          sendError(res, 400, 'Missing shop in body');
           return;
         }
         const result = await disconnectStore(storage, shop);
@@ -81,11 +94,19 @@ export function createServer(): http.Server {
         const cursor = url.searchParams.get('cursor') ?? null;
         const token = shop ? await storage.get(shop) : null;
         if (!shop || !token) {
-          send(res, 401, { error: 'Store not connected or invalid shop' });
+          sendError(res, 401, 'Store not connected or invalid shop', 'TOKEN_INVALID');
           return;
         }
-        const { payload } = await fetchOrders(shop, token, cursor);
-        send(res, 200, payload);
+        try {
+          const { payload } = await fetchOrders(shop, token, cursor);
+          send(res, 200, payload);
+        } catch (err) {
+          if (err instanceof TokenInvalidError) {
+            sendError(res, 401, err.message, err.code);
+            return;
+          }
+          throw err;
+        }
         return;
       }
 
@@ -94,11 +115,19 @@ export function createServer(): http.Server {
         const cursor = url.searchParams.get('cursor') ?? null;
         const token = shop ? await storage.get(shop) : null;
         if (!shop || !token) {
-          send(res, 401, { error: 'Store not connected or invalid shop' });
+          sendError(res, 401, 'Store not connected or invalid shop', 'TOKEN_INVALID');
           return;
         }
-        const { payload } = await fetchFulfillments(shop, token, cursor);
-        send(res, 200, payload);
+        try {
+          const { payload } = await fetchFulfillments(shop, token, cursor);
+          send(res, 200, payload);
+        } catch (err) {
+          if (err instanceof TokenInvalidError) {
+            sendError(res, 401, err.message, err.code);
+            return;
+          }
+          throw err;
+        }
         return;
       }
 
@@ -107,11 +136,42 @@ export function createServer(): http.Server {
         const cursor = url.searchParams.get('cursor') ?? null;
         const token = shop ? await storage.get(shop) : null;
         if (!shop || !token) {
-          send(res, 401, { error: 'Store not connected or invalid shop' });
+          sendError(res, 401, 'Store not connected or invalid shop', 'TOKEN_INVALID');
           return;
         }
-        const { payload } = await fetchProducts(shop, token, cursor);
-        send(res, 200, payload);
+        try {
+          const { payload } = await fetchProducts(shop, token, cursor);
+          send(res, 200, payload);
+        } catch (err) {
+          if (err instanceof TokenInvalidError) {
+            sendError(res, 401, err.message, err.code);
+            return;
+          }
+          throw err;
+        }
+        return;
+      }
+
+      const productVariantsMatch = pathname.match(/^\/api\/product\/([^/]+)\/variants$/);
+      if (productVariantsMatch && method === 'GET') {
+        const productId = productVariantsMatch[1];
+        const shop = url.searchParams.get('shop');
+        const cursor = url.searchParams.get('cursor') ?? null;
+        const token = shop ? await storage.get(shop) : null;
+        if (!shop || !token) {
+          sendError(res, 401, 'Store not connected or invalid shop', 'TOKEN_INVALID');
+          return;
+        }
+        try {
+          const { payload } = await fetchProductVariants(shop, token, productId, cursor);
+          send(res, 200, payload);
+        } catch (err) {
+          if (err instanceof TokenInvalidError) {
+            sendError(res, 401, err.message, err.code);
+            return;
+          }
+          throw err;
+        }
         return;
       }
 
@@ -120,10 +180,14 @@ export function createServer(): http.Server {
         return;
       }
 
-      send(res, 404, { error: 'Not found' });
+      sendError(res, 404, 'Not found');
     } catch (err) {
+      if (err instanceof TokenInvalidError) {
+        sendError(res, 401, err.message, err.code);
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Internal server error';
-      send(res, 500, { error: message });
+      sendError(res, 500, message);
     }
   });
 }
