@@ -1,4 +1,5 @@
 import { sleep } from '../utils/sleep';
+import { TokenInvalidError } from './errors';
 
 const DEFAULT_RESTORE_RATE = 50;
 
@@ -66,6 +67,10 @@ export async function graphqlRequest<T>(
         available: 0,
         lastRestore: Date.now(),
       });
+    }
+
+    if (res.status === 401) {
+      throw new TokenInvalidError('Token expired or revoked');
     }
 
     if (!res.ok) {
