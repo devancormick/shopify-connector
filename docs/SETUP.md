@@ -31,6 +31,7 @@
 - `read_orders`
 - `read_fulfillments`
 - `read_products`
+- `read_inventory`
 
 Set in env as `SHOPIFY_SCOPES` (comma-separated) or leave default.
 
@@ -44,7 +45,7 @@ Set in env as `SHOPIFY_SCOPES` (comma-separated) or leave default.
 - `SHOPIFY_CLIENT_ID` – from your Shopify app
 - `SHOPIFY_CLIENT_SECRET` – from your Shopify app
 - `CALLBACK_URL_BASE` – e.g. `http://localhost:3000` or your public URL (no trailing slash)
-- `SHOPIFY_SCOPES` – optional; default `read_orders,read_fulfillments,read_products`
+- `SHOPIFY_SCOPES` – optional; default `read_orders,read_fulfillments,read_products,read_inventory`
 - `CONNECTOR_PORT` – optional; default `3000`
 
 ## Token expiration / reconnect

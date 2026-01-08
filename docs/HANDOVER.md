@@ -2,7 +2,7 @@
 
 ## What was built
 
-- **Shopify connector** (read-only): OAuth and private app token connect, token storage, revoke/disconnect, and HTTP API to fetch orders (with fulfillments/tracking per order), fulfillments, and products as normalized JSON.
+- **Shopify connector** (read-only): Express.js + TypeScript. OAuth and private app token connect, token storage, revoke/disconnect, and HTTP API to fetch orders (with fulfillments/tracking per order), fulfillments, and products as normalized JSON.
 - **Connection**: OAuth (`/auth/install` + callback) or private app token (`POST /auth/connect-token`).
 - **Data**: Orders (with fulfillments/tracking), fulfillments, products (variants with size/color/SKU, inventory). Pagination and rate limiting. Product variants endpoint for products with >250 variants.
 - **Safety**: One-action disconnect; 401 with `code: TOKEN_INVALID` for token expiry; no background sync after disconnect.
@@ -13,6 +13,7 @@
 2. Copy `.env.example` to `.env` and set:
    - `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `CALLBACK_URL_BASE` (for OAuth)
 3. `npm install && npm run build && npm start`
+   - Optional: `npm test` to run unit tests
 4. **OAuth**: Open `http://localhost:3000/auth/install?shop=YOUR-STORE.myshopify.com`; after approving, you’re connected.
    **Private app**: `POST /auth/connect-token` with `{ "shop": "STORE.myshopify.com", "accessToken": "shpat_..." }`.
 5. Use `GET /api/orders?shop=...`, `/api/fulfillments?shop=...`, `/api/products?shop=...` (optional `&cursor=...`). For products with many variants: `GET /api/product/{productId}/variants?shop=...&cursor=...`.

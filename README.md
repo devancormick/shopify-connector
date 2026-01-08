@@ -1,6 +1,6 @@
 # Shopify Connector
 
-Read-only Shopify connector for an AI-based customer support platform. Securely connects Shopify stores and pulls orders, fulfillments, and products via the GraphQL Admin API so your backend can answer customer questions accurately.
+Read-only Shopify connector for an AI-based customer support platform. Securely connects Shopify stores and pulls orders, fulfillments, and products via the GraphQL Admin API so your backend can answer customer questions accurately. Built with Express.js and TypeScript.
 
 ## Features
 
@@ -22,6 +22,12 @@ npm start
 ```
 
 See [docs/SETUP.md](docs/SETUP.md) for connection flow, required scopes, and how to disconnect.
+
+## Tests
+
+```bash
+npm test
+```
 
 ## Project Structure
 
